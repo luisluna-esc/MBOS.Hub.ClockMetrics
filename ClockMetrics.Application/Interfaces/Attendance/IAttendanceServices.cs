@@ -15,6 +15,7 @@ public interface IAttendanceImportService
 public interface IAttendanceService
 {
     Task<ResponseGetObject> GetEmployeeMonth(long periodId, long employeeId);
+    Task<ResponseGetObject> GetRecords(long periodId, AttendanceQueryFilter filter);
     Task<ResponseGetObject> GetSummary(long periodId, AttendanceQueryFilter filter);
     Task<ResponseGetObject> GetIssues(long periodId, AttendanceQueryFilter filter, bool includeReviewed);
     Task<ResponseGetObject> GetAccumulated(long fromPeriodId, long toPeriodId, AttendanceQueryFilter filter);

@@ -126,9 +126,30 @@ public class AttendanceImportService : IAttendanceImportService
                 .Where(r => r.WorkDate >= firstDate && r.WorkDate <= lastDate && employeeIds.Contains(r.EmployeeId))
                 .ToDictionaryAsync(r => (r.EmployeeId, r.WorkDate));
 
+            // Días con marcas corregidas a mano: si el reloj ahora trae otra cosa, se avisa (la
+            // corrección de RR.HH. sigue mandando, pero quizás ya no hace falta o hay que rehacerla).
+            var overrides = await _unitOfWork.Repository<AttendanceAdjustment>().Query()
+                .Where(a => a.OverrideMarks && a.WorkDate >= firstDate && a.WorkDate <= lastDate && employeeIds.Contains(a.EmployeeId))
+                .ToDictionaryAsync(a => (a.EmployeeId, a.WorkDate));
+
             foreach (var ((deviceCode, date), marks) in byEmployeeDay)
             {
                 var employeeId = employees[deviceCode].EmployeeId;
+                var previousMarks = existingRaw.TryGetValue((employeeId, date), out var previous) ? previous.Marks : string.Empty;
+                if (overrides.TryGetValue((employeeId, date), out var adjustment) && previousMarks != marks)
+                {
+                    result.AdjustedDaysChanged.Add(new ChangedAdjustedDayDto
+                    {
+                        EmployeeId = employeeId,
+                        EmployeeName = employees[deviceCode].FullName,
+                        Date = date,
+                        PreviousMarks = previousMarks,
+                        NewMarks = marks,
+                        CorrectedMarks = CorrectedMarksText(adjustment),
+                        Reason = adjustment.Reason
+                    });
+                }
+
                 if (existingRaw.TryGetValue((employeeId, date), out var raw))
                 {
                     raw.Marks = marks;
@@ -148,6 +169,11 @@ public class AttendanceImportService : IAttendanceImportService
             result.MarkCount = import.MarkCount;
         });
 
+        result.AdjustedDaysChanged = result.AdjustedDaysChanged
+            .OrderBy(d => d.Date)
+            .ThenBy(d => d.EmployeeName, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
         result.Periods = (await periodRepository.Query().ToListAsync())
             .Where(p => periodKeys.Contains((p.Year, p.Month)))
             .OrderBy(p => p.StartDate)
@@ -160,6 +186,15 @@ public class AttendanceImportService : IAttendanceImportService
             Messages = [new Core.Entities.ResponseApi.Details.Message { Type = Core.Entities.ResponseApi.Details.MessageType.Success, Description = "Archivo importado." }],
             StatusCode = HttpStatusCode.OK
         };
+    }
+
+    private static string CorrectedMarksText(AttendanceAdjustment adjustment)
+    {
+        var slots = new (string Label, TimeOnly? Time)[]
+        {
+            ("Ent AM", adjustment.EntryAm), ("Sal AM", adjustment.ExitAm), ("Ent PM", adjustment.EntryPm), ("Sal PM", adjustment.ExitPm)
+        };
+        return string.Join(" · ", slots.Where(s => s.Time.HasValue).Select(s => $"{s.Label} {AttendanceCalculator.Format(s.Time!.Value)}"));
     }
 
     public async Task<ResponseGetObject> GetImports(PaginationQueryFilter paginationQueryFilter)

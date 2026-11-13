@@ -51,7 +51,10 @@ public class AttendanceEngine
         {
             if (onlyIncludedInReports)
                 employeesQuery = employeesQuery.Where(e => e.IncludeInReports && e.IsActive);
-            if (workGroupId.HasValue)
+            // 0 = los que todavía no tienen grupo (recién importados), para poder encontrarlos.
+            if (workGroupId == 0)
+                employeesQuery = employeesQuery.Where(e => e.WorkGroupId == null);
+            else if (workGroupId.HasValue)
                 employeesQuery = employeesQuery.Where(e => e.WorkGroupId == workGroupId.Value);
         }
 

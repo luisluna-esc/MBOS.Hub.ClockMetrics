@@ -49,6 +49,24 @@ public class AttendanceService : IAttendanceService
         });
     }
 
+    /// <summary>Registro jornada laboral de todos los empleados del filtro (la vista general).</summary>
+    public async Task<ResponseGetObject> GetRecords(long periodId, AttendanceQueryFilter filter)
+    {
+        var period = await _unitOfWork.Repository<AttendancePeriod>().GetByIdAsync(periodId);
+        if (period is null)
+            return Responses.GetError(HttpStatusCode.NotFound, "No se encontró el período.");
+
+        var periodDto = AttendanceEngine.ToDto(period);
+        var rows = await _engine.CalculateAsync(period.StartDate, period.EndDate, filter.WorkGroupId, filter.EmployeeId, filter.OnlyIncludedInReports);
+        return Responses.Ok(rows.Select(r => new EmployeeMonthDto
+        {
+            Period = periodDto,
+            Employee = r.ToSummary(),
+            Days = r.Days,
+            Totals = r.Totals
+        }).ToList());
+    }
+
     public async Task<ResponseGetObject> GetSummary(long periodId, AttendanceQueryFilter filter)
     {
         var period = await _unitOfWork.Repository<AttendancePeriod>().GetByIdAsync(periodId);

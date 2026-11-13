@@ -43,7 +43,10 @@ public class EmployeeService : IEmployeeService
             var search = paginationQueryFilter.SearchCriteria.Trim().ToLower();
             query = query.Where(x => x.e.FullName.ToLower().Contains(search) || x.e.DeviceName.ToLower().Contains(search) || x.e.DeviceCode == search);
         }
-        if (filter.WorkGroupId.HasValue)
+        // 0 = sin grupo asignado (los que crea la importación).
+        if (filter.WorkGroupId == 0)
+            query = query.Where(x => x.e.WorkGroupId == null);
+        else if (filter.WorkGroupId.HasValue)
             query = query.Where(x => x.e.WorkGroupId == filter.WorkGroupId.Value);
         if (filter.IncludeInReports.HasValue)
             query = query.Where(x => x.e.IncludeInReports == filter.IncludeInReports.Value);

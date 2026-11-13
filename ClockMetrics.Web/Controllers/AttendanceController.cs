@@ -52,6 +52,14 @@ public class AttendanceController : ControllerBase
         return StatusCode((int)result.StatusCode, result);
     }
 
+    /// <summary>Registro jornada laboral de todos los empleados del filtro.</summary>
+    [HttpGet("periods/{periodId}/records")]
+    public async Task<IActionResult> GetRecords(long periodId, [FromQuery] AttendanceQueryFilter filter)
+    {
+        var result = await _attendanceService.GetRecords(periodId, filter);
+        return StatusCode((int)result.StatusCode, result);
+    }
+
     [HttpGet("periods/{periodId}/summary")]
     public async Task<IActionResult> GetSummary(long periodId, [FromQuery] AttendanceQueryFilter filter)
     {

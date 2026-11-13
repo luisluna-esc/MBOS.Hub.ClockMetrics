@@ -117,6 +117,25 @@ public class ImportResultDto
     public List<string> RenamedEmployees { get; set; } = [];
     public List<PeriodDto> Periods { get; set; } = [];
     public List<string> Warnings { get; set; } = [];
+    /// <summary>
+    /// Días con las marcas corregidas a mano por RR.HH. donde el reloj ahora trae otras marcas: la
+    /// corrección sigue mandando, pero conviene revisarlos.
+    /// </summary>
+    public List<ChangedAdjustedDayDto> AdjustedDaysChanged { get; set; } = [];
+}
+
+public class ChangedAdjustedDayDto
+{
+    public long EmployeeId { get; set; }
+    public string EmployeeName { get; set; } = string.Empty;
+    public DateOnly Date { get; set; }
+    /// <summary>Lo que tenía el reloj antes de esta importación ("" = sin marcas).</summary>
+    public string PreviousMarks { get; set; } = string.Empty;
+    /// <summary>Lo que trae el archivo nuevo.</summary>
+    public string NewMarks { get; set; } = string.Empty;
+    /// <summary>Las horas que puso RR.HH. ("Ent AM 07:58 · Sal AM 12:44 ...").</summary>
+    public string CorrectedMarks { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
 }
 
 public class AttendanceImportDto
