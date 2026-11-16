@@ -1,7 +1,7 @@
 # Despliegue de ClockMetrics
 
 ClockMetrics está en el mismo servidor que InvenTrack y FundTrack (`148.230.73.226`, Ubuntu, Docker) y
-se abre en **http://148.230.73.226:8100**.
+se abre en **https://clockmetrics.iasdmbos.cloud** (registro A `clockmetrics` → `148.230.73.226`).
 
 ## Cómo está armado
 
@@ -10,12 +10,14 @@ se abre en **http://148.230.73.226:8100**.
 | Frontend | contenedor `clockmetrics-frontend` | Angular servido por nginx; pasa `/api` al backend. Puerto local `127.0.0.1:5101`. |
 | Backend | contenedor `clockmetrics-backend` | .NET 10. Puerto local `127.0.0.1:5100`. Red Docker `clockmetrics-net`. |
 | Base de datos | PostgreSQL del servidor | Base `clockmetrics`, usuario `clockmetrics`. El contenedor entra por `host.docker.internal`. |
-| Configuración | `/root/clockmetrics-backend.env` | Cadena de conexión, clave JWT y CORS. Solo root la puede leer. **No va a Git.** |
-| Entrada pública | nginx del servidor, `/etc/nginx/sites-available/clockmetrics.conf` | Escucha en el 8100 y pasa todo a `127.0.0.1:5101`. |
+| Configuración | `/root/clockmetrics-backend.env` | Cadena de conexión, clave JWT y CORS (`https://clockmetrics.iasdmbos.cloud`). Solo root la puede leer. **No va a Git.** Si se cambia, hay que recrear el contenedor del backend (`deploy.sh`). |
+| Entrada pública | nginx del servidor, `/etc/nginx/sites-available/clockmetrics.conf` | HTTPS en el 443 (http redirige a https) y pasa todo a `127.0.0.1:5101`. |
+| Certificado | Let's Encrypt, `/etc/letsencrypt/live/clockmetrics.iasdmbos.cloud` | Lo emitió y lo renueva solo certbot (`certbot.timer`). |
 | Código | `/opt/clockmetrics/backend` y `/opt/clockmetrics/frontend` | Clones de GitHub, desde donde se construyen las imágenes. |
 
-Puertos ocupados en el servidor (para no chocar al agregar otro sistema): InvenTrack 8080 / 5080-5081,
-FundTrack 8090 / 5090-5091, Música 8092 / 5092, ClockMetrics 8100 / 5100-5101.
+Puertos locales ocupados en el servidor (para no chocar al agregar otro sistema): InvenTrack 5080-5081,
+FundTrack 5090-5091, Música 5092, ClockMetrics 5100-5101. Cada sistema entra por su dominio en el 443;
+ClockMetrics ya no tiene acceso por IP y puerto.
 
 ## Actualizar a una nueva versión
 
@@ -42,7 +44,7 @@ FundTrack 8090 / 5090-5091, Música 8092 / 5092, ClockMetrics 8100 / 5100-5101.
    ```bash
    docker ps | grep clockmetrics
    docker logs --tail 30 clockmetrics-backend
-   curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8100/
+   curl -s -o /dev/null -w "%{http_code}\n" https://clockmetrics.iasdmbos.cloud/
    ```
 
    El aviso `Cannot load library libgssapi_krb5.so.2` en el log es normal (librería opcional de Kerberos).

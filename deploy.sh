@@ -32,5 +32,5 @@ docker image prune -f > /dev/null
 echo "== Revisando"
 sleep 8
 docker ps --format "   {{.Names}}: {{.Status}}" | grep clockmetrics
-echo "   sitio: $(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8100/)"
-echo "Listo: http://148.230.73.226:8100"
+echo "   sitio: $(curl -s -o /dev/null -w "%{http_code}" https://clockmetrics.iasdmbos.cloud/)"
+echo "Listo: https://clockmetrics.iasdmbos.cloud"
